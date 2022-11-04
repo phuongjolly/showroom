@@ -42,6 +42,13 @@
   width: 65%;
 }
 
+.box .description-box {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: red;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

@@ -5,12 +5,7 @@ function App() {
   return (
     <div className="App">
         <div className="box">
-            <div className="left">
-                <p>Show your kitchen</p>
-            </div>
-            <div className="right">
-                <Kitchen />
-            </div>
+            <Kitchen />
         </div>
     </div>
   );
