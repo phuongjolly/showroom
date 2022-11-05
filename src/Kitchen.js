@@ -10,13 +10,15 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass";
 
 export default function Kitchen() {
   const mount = useRef();
-  const [title, setTitle] = useState("");
+  const [data, setData] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const shouldScale = useRef(true);
+  const shouldFocus = useRef(true);
 
   useEffect(() => {
     if (mount.current !== null && !mount.current.loaded) {
       mount.current.loaded = true;
+      const objects = [];
       const clock = new THREE.Clock();
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
@@ -66,15 +68,6 @@ export default function Kitchen() {
 
       mount.current.appendChild(renderer.domElement);
 
-      function render() {
-        requestAnimationFrame(render);
-        const delta = clock.getDelta();
-        //renderer.render( scene, camera );
-        update();
-        control.update(delta);
-        composer.render(delta);
-      }
-
       function orbitControl() {
         const control = new OrbitControls(camera, renderer.domElement);
         control.minDistance = 5;
@@ -90,7 +83,7 @@ export default function Kitchen() {
             const house = gltf.scene;
             house.position.set(0, -5, -2);
             house.scale.set(3, 3, 3);
-
+            objects.push(house);
             scene.add(house);
           },
           undefined,
@@ -108,6 +101,19 @@ export default function Kitchen() {
         return cube;
       }
 
+      function render() {
+        requestAnimationFrame(render);
+        const delta = clock.getDelta();
+        //renderer.render( scene, camera );
+        update();
+        control.update(delta);
+        composer.render(delta);
+
+        if (!shouldFocus.current) {
+          outlinePass.selectedObjects = [];
+        }
+      }
+
       function windowResize() {
         window.addEventListener("resize", () => onWindowResize(), false);
         function onWindowResize() {
@@ -119,6 +125,7 @@ export default function Kitchen() {
       }
 
       function onClick(event) {
+        console.log("onClick", event.clientX, event.clientY);
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -136,8 +143,6 @@ export default function Kitchen() {
       }
 
       function objectHandler(raycaster) {
-        //hardcode item
-        //const items = new Set([60, 61, 62]);
         const intersects = raycaster.intersectObjects(scene.children);
         console.log("---debug: ", intersects);
         if (intersects.length > 0) {
@@ -151,18 +156,15 @@ export default function Kitchen() {
           }
           const { object } = firstObject;
 
-          if (true) {
-            console.log("yes....", object);
-            setTitle(object.name);
-            setShowDialog(true);
-            outlinePass.selectedObjects = [object];
-            if (shouldScale) {
-              object.scale.set(1.5, 1.5, 1.5);
-              shouldScale.current = false;
-            }
+          setData({ id: object.id, name: object.name });
+          outlinePass.selectedObjects = [object];
+          setShowDialog(true);
+          shouldFocus.current = true;
 
-            //objectMoving(firstObject);
+          if (shouldScale) {
+            shouldScale.current = false;
           }
+
           render();
         }
       }
@@ -178,28 +180,28 @@ export default function Kitchen() {
           .to({ x: point.x, y: point.y, z: point.z + 7.0 }, 1000)
           .easing(Easing.Quadratic.Out)
           .onUpdate(() => {
-            console.log("check camera......");
             camera.position.set(coords.x, coords.y, coords.z);
             camera.lookAt(point.x, point.y, point.z);
             camera.updateProjectionMatrix();
           })
           .onComplete(() => {
-            console.log("on complete......");
-
             camera.getWorldDirection(look);
           })
           .start();
       }
     }
-  }, [mount.current]);
+  }, [mount.current, showDialog]);
 
   return (
     <>
       <div ref={mount} />
       {showDialog && (
         <DescriptionBox
-          data={{ title: title }}
-          handleShowDialog={() => setShowDialog(false)}
+          data={data}
+          handleShowDialog={() => {
+            setShowDialog(false);
+            shouldFocus.current = false;
+          }}
         />
       )}
     </>
