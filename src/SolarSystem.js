@@ -9,6 +9,8 @@ export default function SolarSystem() {
   const mount = useRef();
   const [data, setData] = useState({ id: "", name: "" });
   const [showDialog, setShowDialog] = useState(false);
+  const [allowRotate, setAllowRotate] = useState(false);
+  const reset = useRef(false);
 
   useEffect(() => {
     if (mount !== null && !mount.current.loaded) {
@@ -83,7 +85,17 @@ export default function SolarSystem() {
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         raycaster.setFromCamera(mouse, camera);
-        focusOnObject(raycaster);
+
+        const { object, point } = getInterSectObject(raycaster);
+        const zoomList = new Set([47, 55, 60, 63, 64, 65]);
+        console.log(object);
+
+        if (object !== null && zoomList.has(object.id)) {
+          //object.rotation.x += 0.01;
+          // object.rotation.y += 0.01;
+          zoomTo(object, point);
+          //rotate(object);
+        }
       }
 
       function loadSolarSystem(file) {
@@ -115,11 +127,12 @@ export default function SolarSystem() {
 
         renderer.render(scene, camera);
         TWEEN.update();
+        //control.update(delta);
       }
 
-      function focusOnObject(raycaster) {
-        console.log("focusOnObject");
+      function getInterSectObject(raycaster) {
         const intersects = raycaster.intersectObjects(scene.children);
+        let firstObject = null;
 
         if (intersects.length > 0) {
           let firstObject = intersects[0];
@@ -130,45 +143,56 @@ export default function SolarSystem() {
               firstObject = intersect;
             }
           }
-
-          console.log("object is focusing....", firstObject);
-
-          const { object, point } = firstObject;
-          const coords = {
-            x: camera.position.x,
-            y: camera.position.y,
-            z: camera.position.z,
-          };
-          const target = {
-            x: point.x,
-            y: point.y,
-            z: point.z + 1,
-          };
-
-          console.log("start tween...");
-
-          new TWEEN.Tween(coords)
-            .to(target, 2000)
-            .easing(TWEEN.Easing.Quadratic.Out)
-            .onUpdate(() => {
-              console.log("check camera......");
-              camera.lookAt(point);
-              camera.updateProjectionMatrix();
-              camera.position.set(coords.x, coords.y, coords.z);
-            })
-            .onComplete(() => {
-              console.log("on complete");
-              new TWEEN.Tween(control.target)
-                .to(point, 500)
-                .easing(TWEEN.Easing.Cubic.Out)
-                .start();
-            })
-            .start();
-
-          setData({ id: object.id, name: object.name });
-          setShowDialog(true);
         }
+
+        return firstObject;
+      }
+
+      function zoomTo(object, point) {
+        const coords = {
+          x: camera.position.x,
+          y: camera.position.y,
+          z: camera.position.z,
+        };
+        const target = {
+          x: point.x,
+          y: point.y,
+          z: point.z + 1,
+        };
+
+        console.log("start tween...", object);
+
+        new TWEEN.Tween(coords)
+          .to(target, 2000)
+          .easing(TWEEN.Easing.Quadratic.Out)
+          .onUpdate(() => {
+            camera.lookAt(point);
+            camera.updateProjectionMatrix();
+            camera.position.set(coords.x, coords.y, coords.z);
+          })
+          .onComplete(() => {
+            new TWEEN.Tween(control.target)
+              .to(point, 500)
+              .easing(TWEEN.Easing.Cubic.Out)
+              .start();
+          })
+          .start();
+
+        setData({ id: object.id, name: object.name });
+        setShowDialog(true);
         render();
+      }
+
+      function rotate(object) {
+        if (allowRotate) {
+          control.autoRotate = true;
+        }
+      }
+
+      function setReset() {
+        if (reset.current) {
+          control.target.set(control.target0);
+        }
       }
     }
   }, [mount.current]);
@@ -182,6 +206,8 @@ export default function SolarSystem() {
           handleShowDialog={() => {
             setShowDialog(false);
           }}
+          setRotate={() => setAllowRotate(true)}
+          reset={() => (reset.current = true)}
         />
       )}
     </>

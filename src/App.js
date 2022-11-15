@@ -5,8 +5,8 @@ import SolarSystem from "./SolarSystem";
 function App() {
   return (
     <div className="App">
-      <div className="box">
-        <SolarSystem />
+      <div className={"container"}>
+        <Kitchen />
       </div>
     </div>
   );

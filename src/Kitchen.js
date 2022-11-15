@@ -14,12 +14,16 @@ export default function Kitchen() {
   const [showDialog, setShowDialog] = useState(false);
   const shouldScale = useRef(true);
   const shouldFocus = useRef(true);
+  const shouldReset = useRef(false);
 
   useEffect(() => {
     if (mount.current !== null && !mount.current.loaded) {
       mount.current.loaded = true;
       const objects = [];
       const clock = new THREE.Clock();
+      const mouse = new THREE.Vector2();
+      const look = new THREE.Vector3();
+      const raycaster = new THREE.Raycaster();
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
         50,
@@ -27,44 +31,21 @@ export default function Kitchen() {
         0.1,
         1000
       );
-      camera.position.set(0, 0, 15);
-      const look = new THREE.Vector3();
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      const startPositionCam = new THREE.Vector3(-21.2, 1.42, 6.06);
 
+      camera.position.set(
+        startPositionCam.x,
+        startPositionCam.y,
+        startPositionCam.z
+      );
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(mount.current.clientWidth, mount.current.clientHeight);
       mount.current.appendChild(renderer.domElement);
 
       const control = orbitControl();
-
-      const outlinePass = new OutlinePass(
-        new THREE.Vector2(
-          mount.current.clientWidth,
-          mount.current.clientHeight
-        ),
-        scene,
-        camera,
-        []
-      );
-      const composer = new EffectComposer(renderer);
-      const renderPass = new RenderPass(scene, camera);
-      composer.addPass(renderPass);
-      composer.addPass(outlinePass);
-      outlinePass.renderToScreen = true;
-
-      const params = {
-        edgeStrength: 3.0,
-        edgeGlow: 1,
-        edgeThickness: 1.0,
-        pulsePeriod: 0,
-        usePatternTexture: false,
-      };
-      outlinePass.edgeStrength = params.edgeStrength;
-      outlinePass.edgeGlow = params.edgeGlow;
-      outlinePass.visibleEdgeColor.set(0xff0000);
-      outlinePass.hiddenEdgeColor.set(0xff00ff);
-
-      const mouse = new THREE.Vector2();
-      const raycaster = new THREE.Raycaster();
+      const outlinePass = initOutLinePass();
+      const composer = initComposer(scene, camera, renderer);
 
       loadHouse();
       render();
@@ -76,6 +57,42 @@ export default function Kitchen() {
         control.minDistance = 5;
         control.maxDistance = 1000;
         return control;
+      }
+
+      function initOutLinePass() {
+        const outlinePass = new OutlinePass(
+          new THREE.Vector2(
+            mount.current.clientWidth,
+            mount.current.clientHeight
+          ),
+          scene,
+          camera,
+          []
+        );
+        outlinePass.renderToScreen = true;
+
+        const params = {
+          edgeStrength: 3.0,
+          edgeGlow: 1,
+          edgeThickness: 1.0,
+          pulsePeriod: 0,
+          usePatternTexture: false,
+        };
+
+        outlinePass.edgeStrength = params.edgeStrength;
+        outlinePass.edgeGlow = params.edgeGlow;
+        outlinePass.visibleEdgeColor.set(0xff0000);
+        outlinePass.hiddenEdgeColor.set(0xff00ff);
+
+        return outlinePass;
+      }
+
+      function initComposer(scene, camera, renderer) {
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        composer.addPass(outlinePass);
+        return composer;
       }
 
       function loadHouse() {
@@ -96,14 +113,6 @@ export default function Kitchen() {
         );
       }
 
-      function loadCube() {
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
-        return cube;
-      }
-
       function render() {
         requestAnimationFrame(render);
         const delta = clock.getDelta();
@@ -115,12 +124,18 @@ export default function Kitchen() {
         if (!shouldFocus.current) {
           removeOutline();
         }
+
+        if (shouldReset.current) {
+          reset();
+          shouldReset.current = false;
+        }
       }
 
       function onWindowResize() {
         camera.aspect = mount.current.clientWidth / mount.current.clientHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(mount.current.clientWith, mount.current.clientHeight);
+
+        renderer.setSize(mount.current.clientWidth, mount.current.clientHeight);
         render();
       }
 
@@ -191,19 +206,33 @@ export default function Kitchen() {
         const target = targetMapping[object.parent.id];
 
         if (target !== undefined) {
-          new Tween(coords)
-            .to(target, 1000)
-            .easing(Easing.Quadratic.Out)
-            .onUpdate(() => {
-              camera.position.set(coords.x, coords.y, coords.z);
-              camera.lookAt(point.x, point.y, point.z);
-              camera.updateProjectionMatrix();
-            })
-            .onComplete(() => {
-              camera.getWorldDirection(look);
-            })
-            .start();
+          look.set(point.x, point.y, point.z);
+          moveCamera(coords, target, point);
         }
+      }
+
+      function moveCamera(start, target) {
+        new Tween(start)
+          .to(target, 1000)
+          .easing(Easing.Quadratic.Out)
+          .onUpdate(() => {
+            camera.position.set(start.x, start.y, start.z);
+            camera.lookAt(look.x, look.y, look.z);
+            camera.updateProjectionMatrix();
+          })
+          .start();
+      }
+
+      function reset() {
+        const start = new THREE.Vector3(
+          camera.position.x,
+          camera.position.y,
+          camera.position.z
+        );
+        look.set(0, 1, 0);
+        moveCamera(start, startPositionCam, look);
+        control.reset();
+        removeOutline();
       }
     }
   }, [mount.current, showDialog]);
@@ -211,8 +240,27 @@ export default function Kitchen() {
   return (
     <>
       <div className={"box"}>
-        <div className={"description"}></div>
-        <div ref={mount} className={"demo"} />
+        <div className={"description"}>
+          <h3>Modern Kitchen</h3>
+          <p>
+            Browse our collection and pick any items to view more details. In
+            this collection:
+          </p>
+          <ul>
+            <li>Kitchen Light</li>
+            <li>Cabinet</li>
+            <li>Set of 6 chairs</li>
+            <li>Modern table</li>
+          </ul>
+        </div>
+        <div ref={mount} className={"demo"}>
+          <button
+            className={"reset-button"}
+            onClick={() => (shouldReset.current = true)}
+          >
+            Reset
+          </button>
+        </div>
       </div>
     </>
   );
