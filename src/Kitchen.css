@@ -1,0 +1,16 @@
+.box {
+    display: flex;
+    flex-direction: row;
+}
+
+.box .description {
+    width: 30%;
+    background-color: rgb(0, 133, 62);
+    padding: 24px;
+}
+
+.box .demo {
+    height: 500px;
+    flex-grow: 1;
+    display: flex;
+}
