@@ -3,10 +3,10 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader";
 import { Easing, Tween, update } from "@tweenjs/tween.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls";
-import DescriptionBox from "./DescriptionBox";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass";
 import { RenderPass } from "three/addons/postprocessing/RenderPass";
+import "./Kitchen.css";
 
 export default function Kitchen() {
   const mount = useRef();
@@ -23,19 +23,23 @@ export default function Kitchen() {
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
         50,
-        window.innerWidth / window.innerHeight,
+        mount.current.clientWidth / mount.current.clientHeight,
         0.1,
         1000
       );
       camera.position.set(0, 0, 15);
       const look = new THREE.Vector3();
       const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      renderer.setSize(mount.current.clientWidth, mount.current.clientHeight);
 
       const control = orbitControl();
 
       const outlinePass = new OutlinePass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        new THREE.Vector2(
+          mount.current.clientWidth,
+          mount.current.clientHeight
+        ),
         scene,
         camera,
         []
@@ -63,8 +67,8 @@ export default function Kitchen() {
 
       loadHouse();
       render();
-      windowResize();
-      onClickHandler();
+      window.addEventListener("resize", () => onWindowResize(), false);
+      renderer.domElement.addEventListener("click", (e) => onClick(e), false);
 
       mount.current.appendChild(renderer.domElement);
 
@@ -106,7 +110,7 @@ export default function Kitchen() {
         const delta = clock.getDelta();
         //renderer.render( scene, camera );
         update();
-        control.update(delta);
+        //control.update(delta);
         composer.render(delta);
 
         if (!shouldFocus.current) {
@@ -114,32 +118,23 @@ export default function Kitchen() {
         }
       }
 
-      function windowResize() {
-        window.addEventListener("resize", () => onWindowResize(), false);
-        function onWindowResize() {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-          render();
-        }
+      function onWindowResize() {
+        camera.aspect = mount.current.clientWidth / mount.current.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(mount.current.clientWith, mount.current.clientHeight);
+        render();
       }
 
       function onClick(event) {
-        console.log("onClick", event.clientX, event.clientY);
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        const rect = mount.current.getBoundingClientRect();
 
+        mouse.x =
+          ((event.clientX - rect.left) / mount.current.clientWidth) * 2 - 1;
+        mouse.y =
+          -((event.clientY - rect.top) / mount.current.clientHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
 
         objectHandler(raycaster);
-      }
-
-      function onClickHandler() {
-        renderer.domElement.addEventListener(
-          "click",
-          (event) => onClick(event),
-          false
-        );
       }
 
       function objectHandler(raycaster) {
@@ -161,6 +156,8 @@ export default function Kitchen() {
           setShowDialog(true);
           shouldFocus.current = true;
 
+          zoomTo(firstObject);
+
           if (shouldScale) {
             shouldScale.current = false;
           }
@@ -169,15 +166,16 @@ export default function Kitchen() {
         }
       }
 
-      function objectMoving(objects) {
+      function zoomTo(objects) {
         const { object, point } = objects;
         const coords = {
           x: camera.position.x,
           y: camera.position.y,
           z: camera.position.z,
         };
+        const target = new THREE.Vector3(-6.5, 0.849, -0.99);
         new Tween(coords)
-          .to({ x: point.x, y: point.y, z: point.z + 7.0 }, 1000)
+          .to(target, 1000)
           .easing(Easing.Quadratic.Out)
           .onUpdate(() => {
             camera.position.set(coords.x, coords.y, coords.z);
@@ -194,16 +192,10 @@ export default function Kitchen() {
 
   return (
     <>
-      <div ref={mount} />
-      {showDialog && (
-        <DescriptionBox
-          data={data}
-          handleShowDialog={() => {
-            setShowDialog(false);
-            shouldFocus.current = false;
-          }}
-        />
-      )}
+      <div className={"box"}>
+        <div className={"description"}></div>
+        <div ref={mount} className={"demo"} />
+      </div>
     </>
   );
 }
