@@ -32,6 +32,7 @@ export default function Kitchen() {
       const renderer = new THREE.WebGLRenderer({ antialias: true });
 
       renderer.setSize(mount.current.clientWidth, mount.current.clientHeight);
+      mount.current.appendChild(renderer.domElement);
 
       const control = orbitControl();
 
@@ -69,8 +70,6 @@ export default function Kitchen() {
       render();
       window.addEventListener("resize", () => onWindowResize(), false);
       renderer.domElement.addEventListener("click", (e) => onClick(e), false);
-
-      mount.current.appendChild(renderer.domElement);
 
       function orbitControl() {
         const control = new OrbitControls(camera, renderer.domElement);
@@ -114,7 +113,7 @@ export default function Kitchen() {
         composer.render(delta);
 
         if (!shouldFocus.current) {
-          outlinePass.selectedObjects = [];
+          removeOutline();
         }
       }
 
@@ -152,10 +151,10 @@ export default function Kitchen() {
           const { object } = firstObject;
 
           setData({ id: object.id, name: object.name });
-          outlinePass.selectedObjects = [object];
           setShowDialog(true);
           shouldFocus.current = true;
 
+          setOutLine(object);
           zoomTo(firstObject);
 
           if (shouldScale) {
@@ -166,6 +165,14 @@ export default function Kitchen() {
         }
       }
 
+      function setOutLine(object) {
+        outlinePass.selectedObjects = [object];
+      }
+
+      function removeOutline() {
+        outlinePass.selectedObjects = [];
+      }
+
       function zoomTo(objects) {
         const { object, point } = objects;
         const coords = {
@@ -173,19 +180,30 @@ export default function Kitchen() {
           y: camera.position.y,
           z: camera.position.z,
         };
-        const target = new THREE.Vector3(-6.5, 0.849, -0.99);
-        new Tween(coords)
-          .to(target, 1000)
-          .easing(Easing.Quadratic.Out)
-          .onUpdate(() => {
-            camera.position.set(coords.x, coords.y, coords.z);
-            camera.lookAt(point.x, point.y, point.z);
-            camera.updateProjectionMatrix();
-          })
-          .onComplete(() => {
-            camera.getWorldDirection(look);
-          })
-          .start();
+        console.log("---camera", camera.position);
+        console.log("---object id", object.id, object);
+        const targetMapping = {
+          31: new THREE.Vector3(-6.5, 0.849, -0.99),
+          19: new THREE.Vector3(-2.5, 0.849, -0.99),
+          38: new THREE.Vector3(-2.5, 0.849, -0.99),
+          20: new THREE.Vector3(0.1, 0.39, 5),
+        };
+        const target = targetMapping[object.parent.id];
+
+        if (target !== undefined) {
+          new Tween(coords)
+            .to(target, 1000)
+            .easing(Easing.Quadratic.Out)
+            .onUpdate(() => {
+              camera.position.set(coords.x, coords.y, coords.z);
+              camera.lookAt(point.x, point.y, point.z);
+              camera.updateProjectionMatrix();
+            })
+            .onComplete(() => {
+              camera.getWorldDirection(look);
+            })
+            .start();
+        }
       }
     }
   }, [mount.current, showDialog]);
