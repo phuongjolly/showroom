@@ -31,6 +31,12 @@
 .App .container {
   margin: auto;
   max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+}
+
+.App .container section {
+  margin: 32px 0;
 }
 
 @keyframes App-logo-spin {

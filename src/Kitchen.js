@@ -7,22 +7,24 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass";
 import { RenderPass } from "three/addons/postprocessing/RenderPass";
 import "./Kitchen.css";
+import { cameraOriginalPosition, objectList, targetMapping } from "./Data";
 
 export default function Kitchen() {
   const mount = useRef();
-  const [data, setData] = useState(null);
+  const data = useRef(null);
   const [showDialog, setShowDialog] = useState(false);
   const shouldScale = useRef(true);
-  const shouldFocus = useRef(true);
+  const showOutline = useRef(true);
   const shouldReset = useRef(false);
+  const shouldFocus = useRef(false);
 
   useEffect(() => {
     if (mount.current !== null && !mount.current.loaded) {
       mount.current.loaded = true;
-      const objects = [];
       const clock = new THREE.Clock();
       const mouse = new THREE.Vector2();
       const look = new THREE.Vector3();
+      let house = new THREE.Object3D();
       const raycaster = new THREE.Raycaster();
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
@@ -31,12 +33,11 @@ export default function Kitchen() {
         0.1,
         1000
       );
-      const startPositionCam = new THREE.Vector3(-21.2, 1.42, 6.06);
 
       camera.position.set(
-        startPositionCam.x,
-        startPositionCam.y,
-        startPositionCam.z
+        cameraOriginalPosition.x,
+        cameraOriginalPosition.y,
+        cameraOriginalPosition.z
       );
 
       const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -100,10 +101,9 @@ export default function Kitchen() {
         loader.load(
           "./resources/kitchen_room/scene.gltf",
           (gltf) => {
-            const house = gltf.scene;
+            house = gltf.scene;
             house.position.set(0, -5, -2);
             house.scale.set(3, 3, 3);
-            objects.push(house);
             scene.add(house);
           },
           undefined,
@@ -121,8 +121,12 @@ export default function Kitchen() {
         //control.update(delta);
         composer.render(delta);
 
-        if (!shouldFocus.current) {
-          removeOutline();
+        if (shouldFocus.current) {
+          console.log("---should focus ", data.current);
+          const object = scene.getObjectByName(data.current.originalName);
+          zoomTo(data.current.parentId, data.current.look);
+          setOutLine(object);
+          shouldFocus.current = false;
         }
 
         if (shouldReset.current) {
@@ -163,14 +167,13 @@ export default function Kitchen() {
               firstObject = intersect;
             }
           }
-          const { object } = firstObject;
+          const { object, point } = firstObject;
 
-          setData({ id: object.id, name: object.name });
           setShowDialog(true);
-          shouldFocus.current = true;
 
+          console.log("---show object...", object.id, object);
           setOutLine(object);
-          zoomTo(firstObject);
+          zoomTo(object.parent.id, point);
 
           if (shouldScale) {
             shouldScale.current = false;
@@ -188,22 +191,15 @@ export default function Kitchen() {
         outlinePass.selectedObjects = [];
       }
 
-      function zoomTo(objects) {
-        const { object, point } = objects;
+      function zoomTo(objectId, point) {
         const coords = {
           x: camera.position.x,
           y: camera.position.y,
           z: camera.position.z,
         };
         console.log("---camera", camera.position);
-        console.log("---object id", object.id, object);
-        const targetMapping = {
-          31: new THREE.Vector3(-6.5, 0.849, -0.99),
-          19: new THREE.Vector3(-2.5, 0.849, -0.99),
-          38: new THREE.Vector3(-2.5, 0.849, -0.99),
-          20: new THREE.Vector3(0.1, 0.39, 5),
-        };
-        const target = targetMapping[object.parent.id];
+        console.log("---debug ", point, objectId);
+        const target = targetMapping[objectId];
 
         if (target !== undefined) {
           look.set(point.x, point.y, point.z);
@@ -211,7 +207,7 @@ export default function Kitchen() {
         }
       }
 
-      function moveCamera(start, target) {
+      function moveCamera(start, target, look) {
         new Tween(start)
           .to(target, 1000)
           .easing(Easing.Quadratic.Out)
@@ -229,13 +225,15 @@ export default function Kitchen() {
           camera.position.y,
           camera.position.z
         );
+
         look.set(0, 1, 0);
-        moveCamera(start, startPositionCam, look);
+        moveCamera(start, cameraOriginalPosition, look);
+
         control.reset();
         removeOutline();
       }
     }
-  }, [mount.current, showDialog]);
+  }, [mount.current, showDialog, shouldFocus.current]);
 
   return (
     <>
@@ -247,10 +245,17 @@ export default function Kitchen() {
             this collection:
           </p>
           <ul>
-            <li>Kitchen Light</li>
-            <li>Cabinet</li>
-            <li>Set of 6 chairs</li>
-            <li>Modern table</li>
+            {objectList.map((item) => (
+              <li
+                key={item.name}
+                onClick={() => {
+                  shouldFocus.current = true;
+                  data.current = item;
+                }}
+              >
+                {item.name}
+              </li>
+            ))}
           </ul>
         </div>
         <div ref={mount} className={"demo"}>

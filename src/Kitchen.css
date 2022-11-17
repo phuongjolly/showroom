@@ -21,6 +21,10 @@
     position: relative;
 }
 
+.box .demo.full {
+    width: 100%;
+}
+
 .box ul {
     list-style: none;
     width: 100%;
@@ -41,4 +45,8 @@
     position: absolute;
     bottom: 10px;
     right: 10px;
+}
+
+.box.gap {
+    gap: 16px;
 }

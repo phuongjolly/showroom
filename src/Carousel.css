@@ -1,0 +1,33 @@
+.carousel {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.carousel .carousel-item {
+    color: white;
+    padding: 16px;
+}
+
+.carousel .carousel-item.yellow {
+    background-color: yellow;
+    color: black;
+}
+
+.carousel .carousel-item.red {
+    background-color: #a03433;
+}
+
+.carousel .carousel-item.green {
+    background-color: rgb(0, 133, 62);
+}
+
+.carousel .carousel-item.dark-green {
+    background-color: #0a2b14;
+}
+
+.carousel .carousel-item .title {
+    font-size: 24px;
+    text-transform: uppercase;
+}
