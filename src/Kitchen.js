@@ -55,7 +55,7 @@ export default function Kitchen() {
 
       function orbitControl() {
         const control = new OrbitControls(camera, renderer.domElement);
-        control.minDistance = 5;
+        control.minDistance = 2;
         control.maxDistance = 1000;
         return control;
       }
@@ -178,8 +178,6 @@ export default function Kitchen() {
           if (shouldScale) {
             shouldScale.current = false;
           }
-
-          render();
         }
       }
 
