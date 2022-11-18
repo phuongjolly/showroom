@@ -1,9 +1,20 @@
 import "./App.css";
-import Kitchen from "./Kitchen";
-import MoreDemo from "./MoreDemo";
+import Kitchen from "./Kitchen/Kitchen";
 import MainMenu from "./MainMenu/MainMenu";
 import Footer from "./Footer/Footer";
+import AboutMe from "./About/AboutMe";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Kitchen />,
+  },
+  {
+    path: "/about-me",
+    element: <AboutMe />,
+  },
+]);
 function App() {
   return (
     <div className="App">
@@ -12,10 +23,7 @@ function App() {
           <MainMenu />
         </nav>
         <section>
-          <Kitchen />
-        </section>
-        <section>
-          <MoreDemo />
+          <RouterProvider router={router} />
         </section>
         <section>
           <Footer />

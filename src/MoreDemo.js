@@ -1,4 +1,4 @@
-import "./Kitchen.css";
+import "./Kitchen/Kitchen.css";
 import Carousel from "./Carousel";
 import "./Carousel.css";
 

@@ -4,10 +4,10 @@ export default function MainMenu() {
     <>
       <ul>
         <li>
-          <a href={"#"}>Products</a>
+          <a href={"/"}>Products</a>
         </li>
         <li>
-          <a href={"#"}>About Me</a>
+          <a href={"/about-me"}>About Me</a>
         </li>
       </ul>
     </>

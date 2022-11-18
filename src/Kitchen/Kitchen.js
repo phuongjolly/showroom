@@ -49,6 +49,7 @@ export default function Kitchen() {
       const composer = initComposer(scene, camera, renderer);
 
       initLight();
+      initSound();
       loadHouse();
       render();
       window.addEventListener("resize", () => onWindowResize(), false);
@@ -116,6 +117,20 @@ export default function Kitchen() {
         const directionalLight = new THREE.DirectionalLight(0xfff);
         directionalLight.position.set(-11, 0, 1);
         //scene.add(directionalLight);
+      }
+
+      function initSound() {
+        const listener = new THREE.AudioListener();
+        camera.add(listener);
+
+        const sound = new THREE.Audio(listener);
+        const audioListener = new THREE.AudioLoader();
+        audioListener.load("./resources/space-120280.mp3", function (buffer) {
+          sound.setBuffer(buffer);
+          sound.setLoop(true);
+          sound.setVolume(0.5);
+          sound.play();
+        });
       }
 
       function loadHouse() {

@@ -26,7 +26,7 @@ export const objectList = [
     id: 49,
     parentName: "window",
     originalName: "window_Material016_0",
-    name: "Door",
+    name: "Window",
     look: new THREE.Vector3(4.61, 2.7, -13.78),
   },
 ];
