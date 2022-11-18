@@ -14,7 +14,6 @@ export default function Kitchen() {
   const data = useRef(null);
   const [showDialog, setShowDialog] = useState(false);
   const shouldScale = useRef(true);
-  const showOutline = useRef(true);
   const shouldReset = useRef(false);
   const shouldFocus = useRef(false);
 
@@ -42,12 +41,14 @@ export default function Kitchen() {
 
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(mount.current.clientWidth, mount.current.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
       mount.current.appendChild(renderer.domElement);
 
       const control = orbitControl();
       const outlinePass = initOutLinePass();
       const composer = initComposer(scene, camera, renderer);
 
+      initLight();
       loadHouse();
       render();
       window.addEventListener("resize", () => onWindowResize(), false);
@@ -96,6 +97,27 @@ export default function Kitchen() {
         return composer;
       }
 
+      function initLight() {
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const spotLight = new THREE.SpotLight(0x888888);
+        spotLight.castShadow = true;
+
+        spotLight.shadow.mapSize.width = mount.current.clientWidth;
+        spotLight.shadow.mapSize.height = mount.current.clientHeight;
+
+        spotLight.shadow.camera.near = 500;
+        spotLight.shadow.camera.far = 4000;
+        spotLight.shadow.camera.fov = 30;
+
+        //scene.add(spotLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xfff);
+        directionalLight.position.set(-11, 0, 1);
+        //scene.add(directionalLight);
+      }
+
       function loadHouse() {
         const loader = new GLTFLoader();
         loader.load(
@@ -122,9 +144,9 @@ export default function Kitchen() {
         composer.render(delta);
 
         if (shouldFocus.current) {
-          console.log("---should focus ", data.current);
+          //console.log("---should focus ", data.current);
           const object = scene.getObjectByName(data.current.originalName);
-          zoomTo(data.current.parentId, data.current.look);
+          zoomTo(data.current.parentName, data.current.look);
           setOutLine(object);
           shouldFocus.current = false;
         }
@@ -173,7 +195,7 @@ export default function Kitchen() {
 
           console.log("---show object...", object.id, object);
           setOutLine(object);
-          zoomTo(object.parent.id, point);
+          zoomTo(object.parent.name, point);
 
           if (shouldScale) {
             shouldScale.current = false;
@@ -189,15 +211,15 @@ export default function Kitchen() {
         outlinePass.selectedObjects = [];
       }
 
-      function zoomTo(objectId, point) {
+      function zoomTo(name, point) {
         const coords = {
           x: camera.position.x,
           y: camera.position.y,
           z: camera.position.z,
         };
         console.log("---camera", camera.position);
-        console.log("---debug ", point, objectId);
-        const target = targetMapping[objectId];
+        console.log("---debug ", point, name);
+        const target = targetMapping[name];
 
         if (target !== undefined) {
           look.set(point.x, point.y, point.z);

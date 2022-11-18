@@ -15,4 +15,5 @@
 
 .main-menu ul li a:hover {
     cursor: pointer;
+    color: green;
 }
